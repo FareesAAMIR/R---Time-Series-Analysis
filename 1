@@ -1,0 +1,264 @@
+ TIME SERIES ANALYSIS - LAB SESSION 1
+ESILV : Master 1 - 2024/2025
+Starting with R
+R is not a programming language like C or Java. It was not created by software engineers for software de- velopment. Instead, it was developed by statisticians as an interactive environment for data analysis. You can read the full history in the paper A Brief History of S. The interactivity is an indispensable feature in data science because, as you will soon learn, the ability to quickly explore data is a necessity for success in this field. However, like in other programming languages, you can save your work as scripts that can be easily executed at any moment. These scripts serve as a record of the analysis you performed, a key feature that facilitates reproducible work. If you are an expert programmer, you should not expect R to follow the conventions you are used to since you will be disappointed. If you are patient, you will come to appreciate the unequal power of R when it comes to data analysis and, specifically, data visualization. 1
+The working directory is the location (in your computer) of where RStudio is currently working (in fact RStudio is not working across your entire computer ; it is working inside one folder of your computer). Concerning this working directory, there are two functions that we will need : getwd() and set()
+Part 1 - Playing with dates, ts object, charts, loops and functions
+ts class object
+A time series can be thought of as a list of numbers, along with some information about what times those numbers were recorded. This information can be stored as a ts object in R.How to create a time series in R ? The ts() function will convert a numeric vector into an R time series object. The format is ts(vector, start=, end=, frequency=) where start and end are the times of the first and last observation and frequency is the number of observations per unit time (1=annual, 4=quartly, 12=monthly, etc.).
+Concretely, the function ts() takes in three arguments 2 :
+1. data which refers to the data (numeric) that has to be converted ;
+2. start is set to the form c(year, period) to indicate the time of the first observation. Here, January corresponds with period 1; likewise, a start date in April would refer to 4 and so on. Thus the numbering of the period will depend on the frequency of observations selected in the nest argument ;
+3. frequency.
+The window function is a quick and easy way to obtain a slice of a time series object. Let’s generate a quarterly time series starting in Q1.2000 :
+tseries <- ts(rnorm(100), start = c(2000, 1), frequency = 4) print(tseries)
+Assume that we wanted only the data from the first quarter of 2000 to the last quarter of 2012. We can do so using window() :
+tseries_sub <- window(tseries, start=c(2000, 1), end=c(2012,4)) print(tseries_sub)
+1. See Rafael A. Irizarry for further details
+2. deltat : argument to be provided instead of frequency. This represents the fraction of the sampling period between successive observations ; e.g., monthly data has deltat=1/12. Only one of frequency or deltat should be provided.
+  1
+
+Multiple Time Series : We can plot multiple time series in one chart by combining both the series into a matrix.
+# Get the data points in form of a R vector.
+ts.1 <- c(799,1174.8,865.1,1334.6,635.4,918.5,685.5,998.6,784.2,985,882.8,1071)
+ts.2 <- c(655,1306.9,1323.4,1172.2,562.2,824,822.4,1265.5,799.6,1105.6,1106.7,1337.8) # Convert them to a matrix.
+matrice <- matrix(c(ts.1,ts.2),nrow = 12)
+# Convert it to a time series object.
+rainfall.ts <- ts(matrice,start = c(2012,1),frequency = 12)
+Combining time series using the period of time as the criteria : Binding several time series together into a single multivariate time series supposes the same data frequency. There exists two ways to bind time series : the union or the intersection of the time domains of the component series.
+Exemple :
+ts1 <- ts(101:106, freq=4, start=2012.75) ts.intersect(ts1, lag(ts1, -1)) ts.union(ts1, lag(ts1, -1))
+cbind(ts1, lag(ts1, -1))
+Dates class object
+R provides several options for dealing with date and date/time data. The builtin as.Date function handles dates without the idea of a periodic sequence of numbers ; the contributed library chron handles dates and times, but does not control for time zones ; and the POSIXct and POSIXlt classes allow for dates and times with control for time zones. The general rule for date/time data in R is to use the simplest technique possible. Thus, for date only data, as.Date will usually be the best choice. If you need to handle dates and times, without timezone information, the chron library is a good choice ; the POSIX classes are especially useful when timezone manipulation is important.
+The as.Date function allows a variety of input formats through the format= argument. The default format is a four digit year, followed by a month, then a day, separated by either dashes or slashes. The following example shows some examples of dates which as.Date will accept by default :
+as.Date(’1915-6-16’) as.Date(’1990/02/17’)
+If your input dates are not in the standard format, a format string can be composed using the elements shown in Table . The following examples show some ways that this can be used :
+as.Date(’1/15/2001’,format=’%m/%d/%Y’) as.Date(’April␣26,␣2001’,format=’%B␣%d,␣%Y’)
+Note we can extract the duration between two dates using a simple difference as described in the next example :
+period <- as.Date(c("2007-06-22", "2004-02-13")) # number of days between 6/22/07 and 2/13/04 days <- period [1] - period [2]
+Plotting Time Series
+There exists two main functions to plot time series. The most simple one is ts_plot while the package ggplot2 offers more features and options to produce a large panel of elegant and diversified charts. Let’s start with the ts_plot function available by loading the the "TSstudio" package. As an example, let’s have a look to the US gas consumption.
+2
+
+install.packages("TSstudio") library(TSstudio)
+data(USgas) ts_info(USgas) ts_plot(USgas)
+By default, the function sets the series name as the plot title. The title allows you to modify the plot title and the Xtitle and Ytitle enable you to add titles to the X-axis and Y-axis respectively :
+ts_plot(USgas ,
+title = "US␣Monthly␣Natural␣Gas␣Consumption", Xtitle = "Time",
+Ytitle = "Billion␣Cubic␣Feet")
+The slider argument allows you to add a slider on the bottom of the plot, which will enable you to customize the window length of the plot :
+ts_plot(USgas ,
+title = "US␣Monthly␣Natural␣Gas␣Consumption", Xtitle = "Time",
+Ytitle = "Billion␣Cubic␣Feet",
+slider = TRUE)
+data("Coffee_Prices") ts_info(Coffee_Prices)
+The line.mode enables to add to the solid line markers (by setting it to lines+markers) or just replace the solid one with markers (by setting it to markers) :
+ts_plot(USgas ,
+title = "US␣Monthly␣Natural␣Gas␣Consumption", Xtitle = "Time",
+Ytitle = "Billion␣Cubic␣Feet",
+line.mode = "lines+markers")
+By default, the function will plot all the series in one plot. Plotting the different series on a separate plot can be done by setting the type argument to multiple :
+ts_plot(Coffee_Prices , type = "multiple")
+# Libraries
+library(ggplot2) library(dplyr)
+# Generating data within an uniform distribution
+data <- data.frame(
+day = as.Date("2017-06-14") - 0:364,
+value = runif(365) + seq(-140, 224)^2 / 10000
+)
+# Most basic bubble plot
+p <- ggplot(data, aes(x=day, y=value)) + geom_line() +
+xlab("")
+The chart format can be customized using options available in the ggplot2 package.For example :
+p+scale_x_date(date_labels = "%b") p+scale_x_date(date_labels = "%Y␣%b␣%d")
+3
+
+p+scale_x_date(date_labels = "%W") p+scale_x_date(date_labels = "%m-%Y")
+We can also use the limit option of the scale_ x_date() function to select a time frame in the data :
+# Libraries
+library(ggplot2) library(dplyr) library(hrbrthemes)
+# Dummy data
+data <- data.frame(
+day = as.Date("2017-06-14") - 0:364,
+value = runif(365) + seq(-140, 224)^2 / 10000
+)
+# Most basic bubble plot
+p <- ggplot(data, aes(x=day, y=value)) + geom_line( color="steelblue") + geom_point() +
+xlab("") +
+theme_ipsum() +
+theme(axis.text.x=element_text(angle=60, hjust=1)) + scale_x_date(limit=c(as.Date("2017-01-01"),as.Date("2017-02-11"))) + ylim (0 ,1.5)
+Loops and conditional expressions
+Conditional expressions are one of the basic features of programming. They are used for what is called flow control. The most common conditional expression is the if-else statement. In R, we can actually perform quite a bit of data analysis without conditionals. However, they do come up occasionally, and you will need them once you start writing your own functions and packages.
+Here is a very simple example showing the general structure of an if-else statement. The basic idea is to print the reciprocal of a unless a is 0 :
+if(a!=0){ print(1/a)
+} else{ print("No␣reciprocal␣for␣0.")
+}
+Here is a very simple example that tells us which states, if any, have a murder rate lower than 0.5 per 100,000. The if statement protects us from the case in which no state satisfies the condition.
+ind <- which.min(murder_rate)
+if(murder_rate[ind] < 0.5){ print(murders$state[ind])
+} else{ print("No␣state␣has␣murder␣rate␣that␣low")
+}
+If we try it again with a rate of 0.25, we get a different answer :
+if(murder_rate[ind] < 0.25){ print(murders$state[ind])
+} else{ print("No␣state␣has␣a␣murder␣rate␣that␣low.")
+}
+4
+
+For loop in R Programming Language is useful to iterate over the elements of a list, dataframe, vector, matrix, or any other object. It means, the for loop can be used to execute a group of statements repeatedly depending upon the number of elements in the object. It is an entry controlled loop, in this loop the test condition is tested first, then the body of the loop is executed, the loop body would not be executed if the test condition is false.
+Here are some examples of iterating loops in R
+for (i in 1: 4) {
+print(log(i) }
+for (i in c(-8, 9, 11, 45)) {
+print(i^2) }
+Note besides that loop can also be used for strings
+fruits <- list("apple", "banana", "cherry")
+for (x in fruits) {
+if (x == "cherry") {
+break
+}
+print(x) }
+R programming language allows using one loop inside another loop. In loop nesting, we can put any type of loop inside of any other type of loop. For example, a for loop can be inside a while loop or vice versa. The following section shows an example to illustrate the concept :
+for (i in 1:3) {
+for (j in 1:i) {
+print(i + j) }
+}
+Performing nest for loop along with if statement to do some complicated tasks. In the below example we shall declare a matrix using matrix () function and checking the variables i=j using if statement.
+mt= 5
+nt =5
+cter =0
+mym = matrix(0,mt,nt) for (i in 0:mt) {
+for (j in 0:nt) { if(i==j) {
+break;
+} else
+{
+mym[i,j] = i*j cter=cter+1
+}
+}
+print(i*j)
+5
+
+} print(cter)
+Next and Break Statement
+A break statement is used inside a loop (repeat,for,while) to stop the iterations and flow the control outside of the loop.
+x <- 1:5
+for (i in x) {
+if (i == 3){ break
+}
+print(i) }
+"next" discontinues a particular iteration and jumps to the next cycle. In fact, it jumps to the evaluation of the condition holding the current loop.
+x <- 1:5 for (i in if (i ==
+next
+}
+print(i) }
+x) { 2){
+Part 2 - Exercises
+Exercise 1-a Studying a Gaussian White Noise
+1. Generate 1000 observations from a normal distribution with 0 mean and a standard deviation of 1.7. This process is named (ut).
+2. Using a function plot, plot the generated series.
+3. Explain what is an autocorrelation function. Plot the ACF of (ut). How do you interpret the ACF results ? Are they aligned with the definition of the white noise.
+Exercise 1-b Studying a random walk
+We suggest to run the same analysis using a random walk process. Formally speaking, yt :
+yt = yt−1 + ut
+A random walk can be seen as a cumulative sum of Gaussian white noises increments.
+1. Generate a random walk based on the simulated white noise (keep the same seed)3.
+2. Convert the simulated data into a ts object (choose the the start date and freq). Plot the generated
+series. Plot its density. What do you observe ?
+3. Plot the ACF of (wnt). How do you interpret this results? Can the models seen during the class be used for this type of data ? Why ?
+4. Run the Ljung Box test for the processes given in the exercise 1-a and 1-b and for a different lags (a for loop could be usefull). Plot the values of the Q(m) and conclude.
+3. There exists two ways to generate a random walk process. You can use a for loop or rewrite the process yt
+ 6
+
+ Assessing the significance level of empirical autocorrelations is a crucial step in the identification of the likely generating process. There are several ways to conclude on the significance of the empirical autocortrelations. We present two of them in this lab session.
+ACF-IC : The ACF confidence Interval function calculates the confidence limits as ρˆk −Zα/2 ×σρk ≤ρk ≤ρˆk +Zα/2 ×σρk
+with P(|Z| ≥ Zα/2) = α and where ρk is autocorrelation function, σρk is the standard error of the sample autocorrelation, Z ∼ N(0,1) and P(|Z| ≥ Zα/2) = α.
+Note that for the case in which the underlying population distribution is normal, the sample autocorrelation also has a normal distribution :
+ρˆ k ∼ N ( ρ k , σ ρ2 ) k
+The Ljung Box test : The sample autocorrelation function (ACF) and partial autocorrelation function (PACF) are useful qualitative tools to assess the presence of autocorrelation at individual lags. The Ljung-Box Q-test is a more quantitative way to test for autocorrelation at multiple lags jointly. The null hypothesis for this test is that the first m autocorrelations are jointly zero,
+In other words :
+H0 :ρ1 =ρ2 =...,=ρm =ρm =0
+(H0 : There is no autocorrelation in the data H1 : There exists a significant autocorrelation.
+The choice of m affects test performance. If N is the length of your observed time series, m ≈ ln(N) is recommended for power. You can test at multiple values of m. If seasonal autocorrelation is possible, you might consider testing at larger values of m, such as 10 or 15.
+This is a modification of the Box-Pierce Portmanteau Q statistic. Under the null hypothesis, Q(m) follows a χ2m distribution. Note, you can use the Ljung-Box Q-test to assess autocorrelation in any series with a constant mean.
+The Ljung Box test rejects the null hypothesis if Q(m) > χ21−α, h where χ21−α, h is the chi-square distribution table value with h degrees of freedom and significance level α and h = m. If the p-value is below your chosen significance level, you reject the null hypothesis in favor of the alternative that at least one of the autocorrelations is not zero in population.
+Exercise 2 - Importing, plotting and analyzing data
+Preamble : Your dataset is most likely located in a different location than your working directory. Wi- thout any action from you, RStudio will never be able to import your file as it is not looking in the correct folder (you will encounter the following error in the console : cannot open file ‘data.csv’ : No such file or directory). Now, in order to specify the correct location of your file (that is, to tell RStudio in which folder it should look for your dataset), you have two options : the user-friendly method, via the scrip/console using the following command setwd(). The directory has to be specified using quotes as it is a sequence of characters chains.
+Q(m) = n(n + 2) k=1
+n−k
+Xm 2 ρˆk
+ 7
+
+In a second step, one wants import data from an external sources 4 To do so, there exists three methods to import csv files (the case of xlsx files will be treated in the next lab session) :
+— Use read.csv from R’s base package (Slowest method, but works fine for smaller datasets) data<-read.csv("C:\\RStudio\\data.csv",header=TRUE, sep=";")
+— The R package “readr” is used to quickly and efficiently read huge flat files into the working space. The syntax is read_csv(. . .)
+library(readr)
+data2 <- read_csv("D:\\RStudio\\Binning\\data.csv␣")
+— Use the data.table package’s fread 5 (faster than read csv) library(data.table)
+data3 <- fread("D:\\RStudio\\Binning\\data.csv␣") Questions :
+1. Import the database contained in the cvs file using the read.csv function. This database is a collection of stock prices.
+2. Plot the third and fifth columns of this dataframe using either the ts_plot or the ggplot2 frame- work.
+3. Plot the density of the selected stock daily returns? Using a quantile plot, check the normality of the empirical distribution of the daily returns. Display the four charts within the same output window 6
+4. Calculate the autocovariance and the autocorrelation functions of the daily returns and calculate the Ljung-Box text for the various numbers of lags.
+5. Plot the same ACF of the daily squared returns and calculate the Ljung-Box text for the various numbers of lags.
+6. What are your conclusions regarding the stationary of the daily and squared daily returns
+Exercise 3 - The Maximum likelihood estimator and functions
+The Principle : I have a bag that contains 3 balls. Each ball is either red or blue, but I have no information in addition to this. Thus, the number of blue balls, call it θ, might be 0, 1, 2, or 3. I am allowed to choose 4 balls at random from the bag with replacement. We define the random variables X1, X2, X3, and X4 as follows
+ 1 if the ith chosen ball is blue Xi = 0 if the ith chosen ball is red
+Note that Xi’s are i.i.d. and Xi ∼ Bernoulli(θ3). After doing my experiment, I observe the following values for Xi’s.
+x1 =1,x2 =0,x3 =1,x4 =1. (1)
+Thus, I observe 3 blue balls and 1 red balls. For each possible value of θ, find the probability of the observed sample, (x1, x2, x3, x4) = (1, 0, 1, 1). For which value of θ is the probability of the observed sample is the largest ?
+The above example gives us the idea behind the maximum likelihood estimation. Here, we introduce this method formally. To do so, we first define the likelihood function. Let X1,X2,X3,...,Xn be a random
+4. R allows also to import using API or external links.
+5. To install a package ion R, use the command install.package("name")
+6. You can alternatively use the function "par" or "layout" to split your plots
+ 8
+
+sample from a distribution with a parameter θ (In general, θ might be a vector, θ = (θ1, θ2, . . . , θk).)
+SupposethatX1,X2,X3,...,Xn aretheobservedvaluesofX1,X2,X3,...,Xn.IfXi’sarediscreteran- dom variables, we define the likelihood function as the probability of the observed sample as a function of θ :
+L(x1,x2,··· ,xn;θ) = P(X1 = x1,X2 = x2,··· ,Xn = xn;θ)
+= PX1X2···Xn (x1, x2, · · · , xn; θ). (2)
+To get a more compact formula, we may use the vector notation, X = (X1, X2, . . . , Xn). Thus, we may write :
+L(x; θ) = PX(x; θ).
+If X1, X2, X3, ..., Xn are jointly continuous, we use the joint PDF instead of the joint probability mass
+function. Thus, the likelihood is defined by :
+L(x1,x2,··· ,xn;θ) = fX1X2···Xn(x1,x2,··· ,xn;θ).
+Let X1, X2, X3, . . . , Xn be a random sample from a distribution with a parameter θ. Suppose that we have observed X1 = x1,X2 = x2,...,Xn = xn.
+1. If Xi’s are discrete, then the likelihood function is defined as : L(x1,x2,··· ,xn;θ) = PX1X2···Xn(x1,x2,··· ,xn;θ).
+2. If Xi’s are continuous, then the likelihood function is defined as : L(x1,x2,··· ,xn;θ) = fX1X2···Xn(x1,x2,··· ,xn;θ).
+In some problems, it is easier to work with the log likelihood function given by : lnL(x1,x2,··· ,xn;θ).
+Thus, The Maximum Likelihood Estimator (MLE) :
+Let X1, X2, X3, . . . , Xn be a random sample from a distribution with a parameter θ. Given that we have observed X1 = x1, X2 = x2, . . . , Xn = xn, a maximum likelihood estimate of θ, shown by θˆML is a value of θ that maximizes the likelihood function
+L(x1,x2,··· ,xn;θ).
+A maximum likelihood estimator (MLE) of the parameter θ, shown by θˆML is a random variable θˆML = θˆML(X1,X2,X3,...,Xn) whose value when X1 = x1,X2 = x2,...,Xn = xn is given by θˆ M L .
+1. The purpose of this exercise is now to write a function that calculate : ■ The likelihood of a sample generated by a exponential distribution ; ■ And find the parameter θ underlying to this sample.
+ 9
+
+ Solution : For the observed values of X1 = x1, X2 = x2, . . . , Xn function is given by
+n L(x1,x2,··· ,xn;θ) = YfXi(xi;θ)
+i=1 n
+= Y θe−θxi i=1
+= θne−θ Pnk=1 xi .
+n
+ln L(x1, x2, · · · , xn; θ) = n ln θ − X xiθ.
+k=1
+=
+xn,
+the likelihood
+(3)
+(4) (5)
+(6)
+2. Answer to the same questions considering this time a ample generated by a Gaussian distribution.
+Part 3 - Homework
+Redo the entire lab session using R.markdown and generate a pdf or html report. This assignment is not mandatory. It will bring for those who will treat it 2 additional points on the final mark of the C.C.
+Appendix
+ Solution : Since Xi ∼ Bernoulli( θ3 ) we have : θ
+3 forx=1 PXi (x) =
+ 1 − θ3 for x = 0
+Since Xi’s are independent, the joint probability mass function of X1,X2,X3, and X4 can be
+written as
+PX1X2X3X4 (x1, x2, x3, x4) = PX1 (x1)PX2 (x2)PX3 (x3)PX4 (x4) (7) θθθθ
+PX1X2X3X4(1,0,1,1)=3· 1−3 ·3·3 (8) θ3  θ
+= 1−. (9) 33
+Note that the joint probability mass function depends on θ, so we write it as PX1X2X3X4 (x1, x2, x3, x4; θ). We obtain the values given for the probability of (1,0,1,1).
+The probability of observed sample for θ = 0 and θ = 3 is zero. This makes sense because our sample included both red and blue balls. For θ = 0, 1, 2, 3 the probabilities obtained from the joint pmf are 0, 0.0247, 0.0988, 0. We see that the probability of the observed data is maximized for θ = 2. This means that the observed data is most likely to occur for θ = 2. For this reason, we may choose θˆ = 2 as our estimate of θ. This is called the maximum likelihood estimate (MLE) of θ.
+10
